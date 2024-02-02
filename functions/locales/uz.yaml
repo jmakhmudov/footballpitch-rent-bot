@@ -1,0 +1,45 @@
+buttons:
+  phone: Mening raqamimni yuboring
+  changelang: Tilni o'zgartirish
+  cancel: Bekor qilish
+  join: So'rovni boshlash
+  mainmenu: Bosh menyu
+
+messages:
+  start: |
+    So'rovlarda ishtirok eting va bonuslarni qo'ling!
+  notRegistered: |
+    Siz ro'yxatdan o'tmaganingizdan dolayi so'rovga qo'shilolmaysiz
+  languageChanged: |
+    Til o'zgartirildi
+  reg: |
+    So'rovda ishtirok qilish uchun ro'yxatdan o'ting.
+  fullname: |
+    FISh kiriting:
+  phone: |
+    Telefon raqamingizni kiriting:
+  invalidphone: |
+    <b>Noto'g'ri telefon raqam!</b>
+    Iltimos, yana bir marta kiriting:
+  age: |
+    Yoshingizni kiriting:
+  invalidage: |
+    <b>Noto'g'ri yosh!</b>
+    Iltimos, yana bir marta kiriting:
+  gender: |
+    Jinsingizni tanlang:
+  invalidgender: |
+    <b>Noto'g'ri jins!</b>
+    Quyidagi variantlardan birini tanlang:
+  regcompleted: |
+    Ro'yxatdan o'tish muvaffaqiyatli yakunlandi ✅
+  error: |
+    Nimadir noto'g'ri ketdi... ❌
+    Iltimos, yana bir marta urinib ko'ring
+
+  chooseLanguage: Tilni tanlang
+  selectsurvey: So'rovnini tanlang
+  surveysnotfound: Mavjud bo'lmagan so'rovlarni topolmadi
+  selectbranch: Filialni tanlang
+  surveycompleted: |
+    So'rovni muvaffaqiyatli yakunlaganingiz uchun rahmat!
