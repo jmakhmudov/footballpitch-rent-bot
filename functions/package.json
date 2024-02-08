@@ -18,8 +18,12 @@
     "dotenv": "^16.4.1",
     "firebase-admin": "^11.8.0",
     "firebase-functions": "^4.3.1",
+    "nodemon": "^3.0.3",
     "telegraf": "^3.38.0",
-    "telegraf-i18n": "^6.6.0"
+    "telegraf-calendar-telegram": "^2.0.2",
+    "telegraf-i18n": "^6.6.0",
+    "telegraf-time-picker": "^1.0.7",
+    "telegraf-time-picker-with-minute": "^1.0.10"
   },
   "devDependencies": {
     "firebase-functions-test": "^3.1.0",

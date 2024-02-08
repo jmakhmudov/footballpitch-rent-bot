@@ -1,6 +1,4 @@
 const functions = require("firebase-functions");
-const TelegrafI18n = require('telegraf-i18n')
-const path = require('path');
 const { Telegraf, session, Stage } = require("telegraf");
 const axios = require("axios");
 const prisma = require("./helpers/prisma")
@@ -8,16 +6,9 @@ const regScene = require("./scenes/reg");
 const start = require("./helpers/start");
 const reserveScene = require("./scenes/reserve");
 const sendLanguage = require("./helpers/sendLang");
-
-require("dotenv").config();
-
-const i18n = new TelegrafI18n({
-  defaultLanguage: 'ru',
-  useSession: true,
-  directory: path.resolve(__dirname, 'locales')
-})
-
-const bot = new Telegraf(process.env.BOT_TOKEN)
+const bot = require("./bot");
+const TelegrafI18n = require('telegraf-i18n');
+const i18n = require("./locales");
 
 const stage = new Stage([regScene, reserveScene]);
 
@@ -26,15 +17,19 @@ bot.use(i18n.middleware())
 bot.use(stage.middleware())
 
 bot.command('start', async (ctx) => {
-  start(ctx)
+  try {
+    start(ctx);
+  } catch (err) {
+    console.log(err)
+  }
 });
 
 bot.hears([TelegrafI18n.match('buttons.reserve')], async (ctx) => {
-  ctx.scene.enter('reserve')
+  ctx.scene.enter('reserve');
 })
 
-bot.hears([TelegrafI18n.match('buttons.mainmenu')], async (ctx) => {
-  ctx.reply('назад')
+bot.hears([TelegrafI18n.match('buttons.changelang')], async (ctx) => {
+  sendLanguage(ctx);
 })
 
 bot.on('callback_query', async (ctx, next) => {
@@ -70,7 +65,7 @@ bot.on('callback_query', async (ctx, next) => {
     return next()
   }
 })
-
+bot.launch()
 exports.telegramBot = functions.https.onRequest(async (request, response) => {
   return await bot.handleUpdate(request.body, response).then((rv) => {
     return !rv && response.sendStatus(200);
