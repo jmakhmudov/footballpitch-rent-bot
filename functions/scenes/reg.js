@@ -37,7 +37,7 @@ const regScene = new WizardScene(
     await prisma.user.create({
       data: ctx.wizard.state.contactData
     })
-    ctx.replyWithHTML(ctx.i18n.t('messages.regcompleted'));
+    await ctx.replyWithHTML(ctx.i18n.t('messages.regcompleted'));
     console.log(ctx.wizard.state.contactData)
     start(ctx)
     return ctx.scene.leave();

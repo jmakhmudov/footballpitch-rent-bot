@@ -13,6 +13,7 @@ model User {
   phone_number String
   isAdmin      Boolean       @default(false)
   isDev        Boolean       @default(false)
+  isLogged     Boolean       @default(false)
   reservations Reservation[]
 }
 

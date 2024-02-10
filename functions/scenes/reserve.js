@@ -4,11 +4,12 @@ const Calendar = require("telegraf-calendar-telegram");
 const bot = require("../bot");
 const start = require("../helpers/start");
 const prisma = require('../helpers/prisma');
+const getAdmins = require('../helpers/getAdmins');
 const isSlotBooked = require("../helpers/isSlotBooked");
-const getBookedHoursForDay = require("../helpers/getBookedHoursForDay");
 const i18n = require("../locales");
 const getAvailableHours = require("../helpers/getAvailableHours");
 const representIntervals = require("../helpers/representIntervals");
+const getUser = require("../helpers/getUser");
 
 bot.use(i18n.middleware())
 
@@ -84,17 +85,23 @@ const reserveScene = new WizardScene(
   async (ctx) => {
     const hour = ctx.message.text;
     const regex = /\b(?:[01]\d|2[0-3]):00\b/
-    const status = await isSlotBooked(`${state.start_date}T${hour}`)
+    const status = await isSlotBooked(`${state.start_date}T${hour}:01`)
     if (regex.test(hour) && !status) {
       state.start_hour = hour
       ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
-${ctx.i18n.t("messages.selectedStartHour")} <b>${state.start_hour}</b>
+${ctx.i18n.t("messages.starT")} <b>${state.start_hour}</b>
 
 ${ctx.i18n.t("messages.enterPlayHours")}`)
 
       return ctx.wizard.next();
     } else {
-      ctx.replyWithHTML("no")
+      const hoursArr = await getAvailableHours(state.start_date);
+      const availableHours = representIntervals(hoursArr);
+      ctx.replyWithHTML(`${ctx.i18n.t("messages.invalidHour")}
+
+<b>${availableHours}</b>
+
+${ctx.i18n.t("messages.selectHour")}`);
     }
   },
   async (ctx) => {
@@ -104,17 +111,45 @@ ${ctx.i18n.t("messages.enterPlayHours")}`)
     const status = await isSlotBooked(`${state.start_date}T${state.start_hour}`, Number(hours));
     if (regex.test(hours) && !status) {
       const startDate = new Date(`${state.start_date}T${state.start_hour}`);
-      reservationData = {
-        user_id: ctx.from.id,
-        start_datetime: startDate,
-        end_datetime: new Date(startDate.getTime() + (hours * 60 * 60 * 1000)),
-        price: 1
-      }
       let options = { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
 
-      ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
+      const workday = isWorkday(startDate);
+      const day = await prisma.price.findFirst({
+        where: {
+          day_type: workday ? 'A' : 'B'
+        }
+      })
+      const card = await prisma.card.findMany();
+      const user = await getUser(ctx.from.id);
+
+      let buttons = [];
+      const price = Number(hours) * day.amount;
+      reservationData = {
+        user_id: JSON.stringify(ctx.from.id),
+        start_datetime: startDate,
+        end_datetime: new Date(startDate.getTime() + (hours * 60 * 60 * 1000)),
+        price: price
+      }
+      ctx.wizard.state.price = price;
+
+      buttons.push([Markup.callbackButton(ctx.i18n.t("messages.paid"), "reservation:paid")]);
+      buttons.push([Markup.callbackButton(ctx.i18n.t("messages.cancel"), "reservation:cancel")]);
+
+      ctx.wizard.state.reservationMsg = ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
 ${ctx.i18n.t("messages.starT")} <b>${reservationData.start_datetime.toLocaleString('ru', options)}</b>
-${ctx.i18n.t("messages.finish")} <b>${reservationData.end_datetime.toLocaleString('ru', options)}</b>`);
+${ctx.i18n.t("messages.finish")} <b>${reservationData.end_datetime.toLocaleString('ru', options)}</b>
+
+<i>${ctx.i18n.t("messages.reservationInfo")}</i>
+
+${ctx.i18n.t("messages.overall")} <b>${price.toLocaleString('en-US', { useGrouping: true })} ${ctx.i18n.t("messages.currency")}</b>
+
+${ctx.i18n.t("messages.toPay")} <code>${(price / 2).toLocaleString('en-US', { useGrouping: true })}</code> <b>${ctx.i18n.t("messages.currency")}</b>
+${ctx.i18n.t("messages.cardNumber")} <code>${card[0].card_number}</code>
+${ctx.i18n.t("messages.cardHolder")} <b>${card[0].card_holder}</b>
+${ctx.i18n.t("messages.comment")} <code>${user.phone_number} ${reservationData.start_datetime.toLocaleString('ru', options)} - ${reservationData.end_datetime.toLocaleString('ru', options)}</code>`, Markup
+        .inlineKeyboard(buttons)
+        .resize()
+        .extra());
 
       return ctx.wizard.next();
     } else {
@@ -122,11 +157,58 @@ ${ctx.i18n.t("messages.finish")} <b>${reservationData.end_datetime.toLocaleStrin
 
 ${ctx.i18n.t("messages.enterPlayHours")}`);
     }
-  },
-  async (ctx) => {
-    ctx.replyWithHTML(isWorkday(reservationData.start_datetime));
   }
 )
+
+reserveScene.on('callback_query', async (ctx) => {
+  const [type, action, clientId] = ctx.callbackQuery.data.split(":");
+
+  if (type === 'reservation') {
+    await ctx.deleteMessage(ctx.wizard.state.reservationMsg.message_id);
+
+    if (action === 'paid') {
+      try {
+        const admins = await getAdmins();
+        const user = await getUser(ctx.from.id);
+        let options = { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+
+        const reservation = await prisma.reservation.create({
+          data: reservationData
+        })
+
+        admins.map(admin => bot.telegram.sendMessage(admin.id, `<b>Новый запрос на бронирование!</b>
+${ctx.i18n.t("messages.starT")} <b>${reservationData.start_datetime.toLocaleString('ru', options)}</b>
+${ctx.i18n.t("messages.finish")} <b>${reservationData.end_datetime.toLocaleString('ru', options)}</b>
+
+${ctx.i18n.t("messages.overall")} <b>${ctx.wizard.state.price.toLocaleString('en-US', { useGrouping: true })} ${ctx.i18n.t("messages.currency")}</b>
+        
+${ctx.i18n.t("messages.toPay")} <code>${(ctx.wizard.state.price / 2).toLocaleString('en-US', { useGrouping: true })}</code> <b>${ctx.i18n.t("messages.currency")}</b>
+
+${ctx.i18n.t("messages.comment")} <code>${user.phone_number} ${reservationData.start_datetime.toLocaleString('ru', options)} - ${reservationData.end_datetime.toLocaleString('ru', options)}</code>`, {
+          parse_mode: 'HTML',
+          reply_markup: {
+            inline_keyboard: [
+              [
+                { text: 'Подтвердить ✅', callback_data: `admin:confirm:${user.id}:${reservation.id}` },
+                { text: 'Отказать ❌', callback_data: `admin:cancel:${user.id}:${reservation.id}` }
+              ]
+            ]
+          }
+        }))
+        ctx.replyWithHTML(ctx.i18n.t("messages.pending"))
+        ctx.scene.leave()
+      } catch (e) {
+        ctx.reply(ctx.i18n.t("messages.error"))
+        ctx.scene.leave()
+        console.log("ERROR RESERVATION CREATION", e.message)
+      }
+    }
+    else {
+      ctx.scene.leave()
+      start(ctx);
+    }
+  }
+})
 
 reserveScene.command('start', (ctx) => {
   ctx.scene.leave()
