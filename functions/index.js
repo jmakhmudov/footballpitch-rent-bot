@@ -1,8 +1,11 @@
 const functions = require("firebase-functions");
-const { Telegraf, session, Stage } = require("telegraf");
+const { Telegraf, session, Stage, Markup } = require("telegraf");
 const axios = require("axios");
 const prisma = require("./helpers/prisma")
 const regScene = require("./scenes/reg");
+const changeCard = require("./scenes/changeCard");
+const changePrice = require("./scenes/changePrice");
+const reservationsScene = require("./scenes/reservationsScene");
 const start = require("./helpers/start");
 const reserveScene = require("./scenes/reserve");
 const sendLanguage = require("./helpers/sendLang");
@@ -10,8 +13,9 @@ const bot = require("./bot");
 const TelegrafI18n = require('telegraf-i18n');
 const i18n = require("./locales");
 const getUser = require("./helpers/getUser");
+const getAdmins = require("./helpers/getAdmins");
 
-const stage = new Stage([regScene, reserveScene]);
+const stage = new Stage([regScene, reserveScene, changeCard, changePrice, reservationsScene]);
 
 bot.use(session())
 bot.use(i18n.middleware())
@@ -62,7 +66,43 @@ bot.hears([TelegrafI18n.match('buttons.reserve')], async (ctx) => {
 })
 
 bot.hears([TelegrafI18n.match('buttons.reservations')], async (ctx) => {
+  ctx.scene.enter('reservationsScene');
+})
 
+
+bot.hears([TelegrafI18n.match('buttons.back')], async (ctx) => {
+  ctx.scene.leave()
+  start(ctx)
+})
+
+bot.hears([TelegrafI18n.match('buttons.settings')], async (ctx) => {
+  ctx.reply(ctx.i18n.t("buttons.settings"), Markup
+    .keyboard([
+      [Markup.button(ctx.i18n.t('buttons.changeCard'))],
+      [Markup.button(ctx.i18n.t('buttons.changePrice'))],
+      [Markup.button(ctx.i18n.t('buttons.addManager'))],
+      [Markup.button(ctx.i18n.t('buttons.back'))],
+    ])
+    .oneTime(false)
+    .resize()
+    .extra()
+  )
+})
+
+bot.hears([TelegrafI18n.match('buttons.changeCard')], async (ctx) => {
+  ctx.scene.enter('changeCard');
+})
+
+bot.hears([TelegrafI18n.match('buttons.changePrice')], async (ctx) => {
+  ctx.scene.enter('changePrice');
+})
+
+bot.hears([TelegrafI18n.match('buttons.addManager')], async (ctx) => {
+  const admins = await getAdmins();
+  ctx.reply(ctx.i18n.t("messages.adminsList"))
+  admins.map(admin =>
+    ctx.replyWithHTML(`ID: <b>${admin.id}</b>\n\nИмя: ${admin.full_name}\nНомер телефона: ${admin.phone_number}`)
+  )
 })
 
 bot.hears([TelegrafI18n.match('buttons.changelang')], async (ctx) => {
@@ -102,6 +142,10 @@ bot.on('callback_query', async (ctx, next) => {
   else if (type === 'admin') {
     if (action === "confirm") {
       ctx.deleteMessage()
+      await prisma.reservation.update({
+        where: { id: reservationId },
+        data: { isApproved: true }
+      })
       await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationApproved")}`)
     } else {
       ctx.deleteMessage()

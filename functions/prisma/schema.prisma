@@ -25,6 +25,7 @@ model Reservation {
   start_datetime DateTime
   end_datetime   DateTime
   price          Float
+  isApproved     Boolean  @default(false)
 }
 
 model Price {
