@@ -13,6 +13,7 @@ const start = async (ctx) => {
       .keyboard([
         [Markup.button(ctx.i18n.t('buttons.reservations'))],
         [Markup.button(ctx.i18n.t('buttons.settings'))],
+        [Markup.button(ctx.i18n.t('buttons.anouncement'))],
         [Markup.button(ctx.i18n.t('buttons.changelang'))],
       ])
       .oneTime(false)

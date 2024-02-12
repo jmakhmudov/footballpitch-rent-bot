@@ -10,6 +10,7 @@ const i18n = require("../locales");
 const getAvailableHours = require("../helpers/getAvailableHours");
 const representIntervals = require("../helpers/representIntervals");
 const getUser = require("../helpers/getUser");
+const TelegrafI18n = require('telegraf-i18n');
 
 bot.use(i18n.middleware())
 
@@ -25,8 +26,8 @@ const calendar = new Calendar(bot, {
   startWeekDay: 1,
   weekDayNames: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"],
   monthNames: [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+    "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+    "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"
   ],
   minDate: minDate,
   maxDate: null,
@@ -49,6 +50,10 @@ let state = {
   end_hour: null
 }
 
+let selHour = 0
+let availableHoursGlob
+let globDate
+
 calendar.setDateListener(async (ctx, date) => {
   try {
     ctx.deleteMessage();
@@ -58,13 +63,15 @@ calendar.setDateListener(async (ctx, date) => {
       state.start_date = date;
       const hoursArr = await getAvailableHours(date);
       const availableHours = representIntervals(hoursArr);
+      availableHoursGlob = availableHours
+      globDate = date
 
       ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} ${date}
 
 ${ctx.i18n.t("messages.selectFreeTime")}
 <b>${availableHours}</b>
 
-${ctx.i18n.t("messages.selectHour")}`)
+${ctx.i18n.t("messages.selectHour")}`, generateKeyboard(selHour))
     }
     else {
       ctx.replyWithHTML(`${ctx.i18n.t("messages.dayisbooked")}`, calendar.getCalendar());
@@ -75,34 +82,29 @@ ${ctx.i18n.t("messages.selectHour")}`)
 
 });
 
+function generateKeyboard(hour) {
+  const buttons = [];
+  buttons.push(Markup.callbackButton('+', `hour:+`));
+  buttons.push(Markup.callbackButton(hour + ':00', 'selected_hour'));
+  buttons.push(Markup.callbackButton('-', `hour:-`));
+  buttons.push(Markup.callbackButton('✅', `hour:accept`));
+
+  const keyboard = Markup.inlineKeyboard(buttons, { columns: 3 });
+  return keyboard.extra();
+}
 const reserveScene = new WizardScene(
   'reserve',
   async (ctx) => {
     ctx.replyWithHTML(ctx.i18n.t("messages.selectDate"), calendar.getCalendar());
+    ctx.reply(ctx.i18n.t("messages.backInfo"), Markup
+      .keyboard([
+        [Markup.button(ctx.i18n.t('buttons.back'))],
+      ])
+      .oneTime(false)
+      .resize()
+      .extra())
 
     return ctx.wizard.next();
-  },
-  async (ctx) => {
-    const hour = ctx.message.text;
-    const regex = /\b(?:[01]\d|2[0-3]):00\b/
-    const status = await isSlotBooked(`${state.start_date}T${hour}:01`)
-    if (regex.test(hour) && !status) {
-      state.start_hour = hour
-      ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
-${ctx.i18n.t("messages.starT")} <b>${state.start_hour}</b>
-
-${ctx.i18n.t("messages.enterPlayHours")}`)
-
-      return ctx.wizard.next();
-    } else {
-      const hoursArr = await getAvailableHours(state.start_date);
-      const availableHours = representIntervals(hoursArr);
-      ctx.replyWithHTML(`${ctx.i18n.t("messages.invalidHour")}
-
-<b>${availableHours}</b>
-
-${ctx.i18n.t("messages.selectHour")}`);
-    }
   },
   async (ctx) => {
     const hours = ctx.message.text;
@@ -208,6 +210,74 @@ ${ctx.i18n.t("messages.comment")} <code>${user.phone_number} ${reservationData.s
       start(ctx);
     }
   }
+  else if (type === 'hour') {
+    if (action === '+') {
+      selHour = (Number(selHour) + 1) % 24;
+      ctx.editMessageText(`${ctx.i18n.t("messages.selectedDate")} ${globDate}
+
+${ctx.i18n.t("messages.selectFreeTime")}
+<b>${availableHoursGlob}</b>
+      
+${ctx.i18n.t("messages.selectHour")}`, {
+        parse_mode: 'HTML',
+        ...generateKeyboard(selHour)
+      });
+    }
+    else if (action === '-') {
+      selHour = (Number(selHour) - 1 + 24) % 24;
+      ctx.editMessageText(`${ctx.i18n.t("messages.selectedDate")} ${globDate}
+
+${ctx.i18n.t("messages.selectFreeTime")}
+<b>${availableHoursGlob}</b>
+      
+${ctx.i18n.t("messages.selectHour")}`, {
+        parse_mode: 'HTML',
+        ...generateKeyboard(selHour)
+      });
+    }
+    else {
+      ctx.deleteMessage();
+      const hour = String(selHour).padStart(2, '0');
+
+      const regex = /\b(?:[01]\d|2[0-3])\b/
+      const status = await isSlotBooked(`${state.start_date}T${hour}:00:01`)
+      if (regex.test(hour) && !status) {
+        state.start_hour = `${hour}:00`
+        ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
+${ctx.i18n.t("messages.starT")} <b>${state.start_hour}</b>
+
+${ctx.i18n.t("messages.enterPlayHours")}`)
+      } else {
+        const hoursArr = await getAvailableHours(state.start_date);
+        const regex = /\b(?:[01]\d|2[0-3]):00\b/
+        const status = await isSlotBooked(`${state.start_date}T${hour}:01`)
+        if (regex.test(hour) && !status) {
+          state.start_hour = `${hour}:00`
+          ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
+${ctx.i18n.t("messages.starT")} <b>${state.start_hour}</b>
+
+${ctx.i18n.t("messages.enterPlayHours")}`)
+        } else {
+          const hoursArr = await getAvailableHours(state.start_date);
+          const availableHours = representIntervals(hoursArr);
+          ctx.replyWithHTML(`${ctx.i18n.t("messages.invalidHour")}
+
+<b>${availableHours}</b>
+
+${ctx.i18n.t("messages.selectHour")}`, {
+            parse_mode: 'HTML',
+            ...generateKeyboard(selHour)
+          });
+        }
+      }
+    }
+  }
+
+})
+
+reserveScene.hears([TelegrafI18n.match('buttons.back')], async (ctx) => {
+  ctx.scene.leave()
+  start(ctx)
 })
 
 reserveScene.command('start', (ctx) => {

@@ -14,8 +14,10 @@ const TelegrafI18n = require('telegraf-i18n');
 const i18n = require("./locales");
 const getUser = require("./helpers/getUser");
 const getAdmins = require("./helpers/getAdmins");
+const anouncement = require("./scenes/anouncement");
+const checkAdmin = require("./helpers/checkAdmin");
 
-const stage = new Stage([regScene, reserveScene, changeCard, changePrice, reservationsScene]);
+const stage = new Stage([regScene, reserveScene, changeCard, changePrice, reservationsScene, anouncement]);
 
 bot.use(session())
 bot.use(i18n.middleware())
@@ -60,15 +62,42 @@ bot.command('client', async (ctx) => {
   }
 })
 
+bot.command('reqadmin', async (ctx) => {
+  const admins = await getAdmins();
+  const user = await getUser(ctx.from.id);
+
+  if (!user.isAdmin) {
+    admins.forEach((admin) => {
+      bot.telegram.sendMessage(admin.id, `${ctx.i18n.t("messages.newAdmin")}\n\n👤 ${user.full_name}`,
+        Markup
+          .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.confirm"), `newAdmin:${user.id}`)])
+          .resize()
+          .extra()
+      )
+    })
+  }
+  else {
+    ctx.reply(ctx.i18n.t("messages.alreadyAdmin"))
+  }
+})
 
 bot.hears([TelegrafI18n.match('buttons.reserve')], async (ctx) => {
   ctx.scene.enter('reserve');
 })
 
 bot.hears([TelegrafI18n.match('buttons.reservations')], async (ctx) => {
-  ctx.scene.enter('reservationsScene');
+  const check = checkAdmin(ctx.from.id);
+  if (check) {
+    ctx.scene.enter('reservationsScene');
+  }
 })
 
+bot.hears([TelegrafI18n.match('buttons.anouncement')], async (ctx) => {
+  const check = checkAdmin(ctx.from.id);
+  if (check) {
+    ctx.scene.enter('anouncement');
+  }
+})
 
 bot.hears([TelegrafI18n.match('buttons.back')], async (ctx) => {
   ctx.scene.leave()
@@ -76,33 +105,49 @@ bot.hears([TelegrafI18n.match('buttons.back')], async (ctx) => {
 })
 
 bot.hears([TelegrafI18n.match('buttons.settings')], async (ctx) => {
-  ctx.reply(ctx.i18n.t("buttons.settings"), Markup
-    .keyboard([
-      [Markup.button(ctx.i18n.t('buttons.changeCard'))],
-      [Markup.button(ctx.i18n.t('buttons.changePrice'))],
-      [Markup.button(ctx.i18n.t('buttons.addManager'))],
-      [Markup.button(ctx.i18n.t('buttons.back'))],
-    ])
-    .oneTime(false)
-    .resize()
-    .extra()
-  )
+  const check = checkAdmin(ctx.from.id);
+  if (check) {
+    ctx.reply(ctx.i18n.t("buttons.settings"), Markup
+      .keyboard([
+        [Markup.button(ctx.i18n.t('buttons.changeCard'))],
+        [Markup.button(ctx.i18n.t('buttons.changePrice'))],
+        [Markup.button(ctx.i18n.t('buttons.addManager'))],
+        [Markup.button(ctx.i18n.t('buttons.back'))],
+      ])
+      .oneTime(false)
+      .resize()
+      .extra()
+    )
+  }
 })
 
 bot.hears([TelegrafI18n.match('buttons.changeCard')], async (ctx) => {
-  ctx.scene.enter('changeCard');
+  const check = checkAdmin(ctx.from.id);
+  if (check) {
+    ctx.scene.enter('changeCard');
+  }
 })
 
 bot.hears([TelegrafI18n.match('buttons.changePrice')], async (ctx) => {
-  ctx.scene.enter('changePrice');
+  const check = checkAdmin(ctx.from.id);
+  if (check) {
+    ctx.scene.enter('changePrice');
+  }
 })
 
 bot.hears([TelegrafI18n.match('buttons.addManager')], async (ctx) => {
-  const admins = await getAdmins();
-  ctx.reply(ctx.i18n.t("messages.adminsList"))
-  admins.map(admin =>
-    ctx.replyWithHTML(`ID: <b>${admin.id}</b>\n\nИмя: ${admin.full_name}\nНомер телефона: ${admin.phone_number}`)
-  )
+  const check = checkAdmin(ctx.from.id);
+  if (check) {
+    const admins = await getAdmins();
+    ctx.reply(ctx.i18n.t("messages.adminsList"))
+    admins.map(admin =>
+      ctx.replyWithHTML(`ID: <b>${admin.id}</b>\n\nИмя: ${admin.full_name}\nНомер телефона: ${admin.phone_number}`, Markup
+        .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.delete"), `adminsList:del:${admin.id}`)])
+        .resize()
+        .extra()
+      )
+    )
+  }
 })
 
 bot.hears([TelegrafI18n.match('buttons.changelang')], async (ctx) => {
@@ -154,6 +199,20 @@ bot.on('callback_query', async (ctx, next) => {
       })
       await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationCancelled")}`)
     }
+  }
+  else if (type === "adminsList") {
+    await prisma.user.update({
+      where: { id: clientId },
+      data: { isAdmin: false }
+    });
+    ctx.reply(ctx.i18n.t("messages.adminDel"));
+  }
+  else if (type === "newAdmin") {
+    await prisma.user.update({
+      where: { id: action },
+      data: { isAdmin: true }
+    });
+    ctx.reply(ctx.i18n.t("messages.succNewAdmin"));
   }
   else {
     return next()
