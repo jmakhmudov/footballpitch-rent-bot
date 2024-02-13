@@ -85,6 +85,28 @@ bot.hears([TelegrafI18n.match('buttons.reserve')], async (ctx) => {
   ctx.scene.enter('reserve');
 })
 
+bot.hears([TelegrafI18n.match('buttons.myReservations')], async (ctx) => {
+  const reservations = await prisma.reservation.findMany({
+    where: { user_id: JSON.stringify(ctx.from.id) }
+  })
+
+  if (!reservations.length) {
+    return ctx.reply(ctx.i18n.t("messages.noRes"));
+  }
+
+  let options = { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+
+  const reservationsInfo = await Promise.all(reservations.map(async (res) => {
+    return (`${res.isApproved ? `✅✅✅` : `🕐🕐🕐`}\n${ctx.i18n.t("messages.starT")} <b>${res.start_datetime.toLocaleString('ru', options)}</b>
+${ctx.i18n.t("messages.finish")} <b>${res.end_datetime.toLocaleString('ru', options)}</b>
+      
+${ctx.i18n.t("messages.overall")} <b>${res.price.toLocaleString('en-US', { useGrouping: true })} ${ctx.i18n.t("messages.currency")}</b>
+      
+${ctx.i18n.t("messages.toPay")} <code>${(res.price / 2).toLocaleString('en-US', { useGrouping: true })}</code> <b>${ctx.i18n.t("messages.currency")}</b>`)
+  }))
+  ctx.replyWithHTML(`<b>${ctx.i18n.t("buttons.myReservations")}</b>\n\n${reservationsInfo.join("\n-------------------\n")}`)
+})
+
 bot.hears([TelegrafI18n.match('buttons.reservations')], async (ctx) => {
   const check = checkAdmin(ctx.from.id);
   if (check) {
@@ -136,18 +158,17 @@ bot.hears([TelegrafI18n.match('buttons.changePrice')], async (ctx) => {
 })
 
 bot.hears([TelegrafI18n.match('buttons.addManager')], async (ctx) => {
-  const check = checkAdmin(ctx.from.id);
-  if (check) {
-    const admins = await getAdmins();
-    ctx.reply(ctx.i18n.t("messages.adminsList"))
-    admins.map(admin =>
+  const admins = await getAdmins();
+  ctx.reply(ctx.i18n.t("messages.adminsList"))
+  admins.map(admin => {
+    if (!admin.isDev) {
       ctx.replyWithHTML(`ID: <b>${admin.id}</b>\n\nИмя: ${admin.full_name}\nНомер телефона: ${admin.phone_number}`, Markup
         .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.delete"), `adminsList:del:${admin.id}`)])
         .resize()
         .extra()
       )
-    )
-  }
+    }
+  })
 })
 
 bot.hears([TelegrafI18n.match('buttons.changelang')], async (ctx) => {
@@ -176,7 +197,7 @@ bot.on('callback_query', async (ctx, next) => {
 
     ctx.i18n.locale(ctx.session.language)
     ctx.answerCbQuery();
-    ctx.deleteMessage()
+    ctx.deleteMessage();
 
     const user = await prisma.user.findUnique({
       where: { id: JSON.stringify(ctx.from.id) }
@@ -185,8 +206,16 @@ bot.on('callback_query', async (ctx, next) => {
     else start(ctx)
   }
   else if (type === 'admin') {
+    const reservation = await prisma.reservation.findUnique({
+      where: { id: reservationId }
+    });
+
     if (action === "confirm") {
       ctx.deleteMessage()
+
+      if (reservation && reservation.isApproved) {
+        return ctx.reply("✅")
+      }
       await prisma.reservation.update({
         where: { id: reservationId },
         data: { isApproved: true }
@@ -194,6 +223,11 @@ bot.on('callback_query', async (ctx, next) => {
       await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationApproved")}`)
     } else {
       ctx.deleteMessage()
+
+      if (reservation && reservation.isApproved) {
+        return ctx.reply("✅")
+      }
+
       await prisma.reservation.delete({
         where: { id: reservationId }
       })
@@ -218,7 +252,7 @@ bot.on('callback_query', async (ctx, next) => {
     return next()
   }
 })
-bot.launch()
+
 exports.telegramBot = functions.https.onRequest(async (request, response) => {
   return await bot.handleUpdate(request.body, response).then((rv) => {
     return !rv && response.sendStatus(200);

@@ -24,6 +24,7 @@ const start = async (ctx) => {
     return ctx.reply(ctx.i18n.t('messages.start'), Markup
       .keyboard([
         [Markup.button(ctx.i18n.t('buttons.reserve'))],
+        [Markup.button(ctx.i18n.t('buttons.myReservations'))],
         [Markup.button(ctx.i18n.t('buttons.changelang'))],
       ])
       .oneTime(false)

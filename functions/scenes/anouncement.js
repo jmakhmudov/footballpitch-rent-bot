@@ -51,7 +51,6 @@ const anouncement = new WizardScene(
         }
       }
     } catch (error) {
-      ctx.reply(ctx.i18n.t("messages.errorAnouncement"));
       console.error('Error sending message to all users:', error);
     }
     ctx.scene.leave();

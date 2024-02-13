@@ -22,7 +22,7 @@ const regScene = new WizardScene(
     return ctx.wizard.next();
   },
   (ctx) => {
-    if (!(isValidPhoneNumber(ctx.message.text) || (ctx.message.contact && isValidPhoneNumber(ctx.message.contact.phone_number)))) {
+    if (!(isValidPhoneNumber(ctx.message.text) || (ctx.message.contact && ctx.message.contact.phone_number))) {
       ctx.replyWithHTML(ctx.i18n.t('messages.invalidphone'));
       return;
     }

@@ -1,33 +1,36 @@
 buttons:
-  phone: Mening raqamni yuborish
+  phone: Mening raqamimni yuboring
   changelang: Tilni o'zgartirish 🇷🇺/🇺🇿
   cancel: Bekor qilish
-  reserve: Maydonni bron qilish ⚽️
+  reserve: Maydonni band qilish ⚽️
   mainmenu: Asosiy menyu
-  confirm: Tasdiqlash
+  confirm: Tasdiqlash ✅
   select: Tanlash
-  reservations: Bronlar ✅
+  reservations: Band qilishlar ✅
   settings: Sozlamalar ⚙️
-  changeCard: Karta raqamini o'zgartirish 💳
+  changeCard: Kartani o'zgartirish 💳
   changePrice: Narxni o'zgartirish 💰
   addManager: Menejerlar 👤
   back: Asosiy menyu ⬅️
-  workdays: Ish kunlari
-  weekends: Dam olish kunlari
-  approvedRes: Tasdiqlanganlar ✅
+  workdays: Ish kuni
+  weekends: Dam olish kuni
+  approvedRes: Tasdiqlangan ✅
   pendingRes: Kutilmoqda 🕐
+  anouncement: E'lon yuborish 📝
+  delete: O'chirish 🗑
+  myReservations: Mening band qilishlarim ✅
 
 messages:
   start: |
-    Futbol o'ynashni xohlaysizmi? ⚽️
-    Bo'limni tanlang:
+    Futbol o'ynashni istaysizmi? ⚽️
+  Bo'limni tanlang:
   startAdmin: |
-    ⚙️ Xush kelibsiz, admin panelga
-    /client - mijoz qismiga qaytish
-    /admin - admin paneliga kiring
+    ⚙️ Admin paneliga xush kelibsiz.
+    /client - mijoz bo'limiga qaytish
+    /admin - admin paneliga kirish
     Bo'limni tanlang:
   adminLogout: |
-    Siz mijoz qismiga o'tasiz...
+    Siz mijoz bo'limiga o'tasiz...
   startReg: |
     Salom! Ro'yxatdan o'tishni boshlaymiz...
   notRegistered: |
@@ -35,71 +38,80 @@ messages:
   languageChanged: |
     Til o'zgartirildi
   reservationCancelled: |
-    Sizning bronni bekor qilindi ❌
-    Menejer bilan bog'laning - /help
+    Sizning bandingiz bekor qilindi ❌
+    Menejer bilan bog'laning...
   reservationApproved: |
-    Sizning bron tasdiqlandi ✅
-    Xush kelibsiz ⚽️
-  noRes: "Bron topilmadi"
+    Sizning bandingiz tasdiqlandi ✅
+    Sportga yoqilgan kunlarni kutib o'zingizga joy yaratib qo'ying ⚽️
+  errorAnouncement: ❌ E'lon yuborilmadi, dasturchiga murojaat qiling
+  succAnouncement: ✅ E'lon barcha bot foydalanuvchilariga muvaffaqiyatli yuborildi
+  anouncementInfo: "E'lon jo'natmoqchi bo'lgan yangiliklaringizni xabarnoma bilan yuboring (maks. 1 rasmi yoki video):"
+  noRes: "Band qilish topilmadi"
   resType: "Bo'limni tanlang:"
-  chooseDayType: "Kun turi tanlang:"
+  chooseDayType: "Kun turini tanlang:"
+  adminDel: 🗑 Admin o'chirildi
   priceChanged: ✅ Narx muvaffaqiyatli o'zgartirildi
-  enterPrice: "Summa kiriting (bo'shliq va ','siz):"
-  enterCardNum: "Yangi karta raqamini kiriting:"
-  enterCardHolder: "Karta egasi ismini kiriting:"
+  enterPrice: "Sum bo'yligi kiriting (bo'sh joy va ','):"
+  enterCardNum: "Yangi kartaning raqamini kiriting:"
+  enterCardHolder: "Kartaning egasi ismini kiriting:"
   newCard: Karta muvaffaqiyatli qo'shildi!
+  alreadyAdmin: "Siz allaqachon admin hisoblanasiz\nAdmin paneliga kirish uchun /admin ni bosing"
+  newAdmin: "Foydalanuvchi admin bo'lishni so'rayapti"
+  succNewAdmin: "✅ Foydalanuvchiga admin huquqlari berildi"
   adminsList: "Menejerlar ro'yxati:"
-  selectHour: "Vaqt kiriting (CH:00):"
-  selectFreeTime: "O'yin boshlash uchun bo'sh vaqtni tanlang:"
+  selectHour: "Vaqt kiriting (S:00):"
+  selectFreeTime: "Boshlang'ich o'yin uchun bo'sh soatni tanlang:"
+  backInfo: Bekor qilish uchun Asosiy menyu tugmasini bosing ⬅️
   hours: soat
-  selectedDate: "Tanlangan sanasi:"
-  starT: "Boshlang'ich:"
-  finish: "Tugash:"
+  selectedDate: "Tanlangan sana:"
+  starT: "Boshlanishi:"
+  finish: "Tugashi:"
   invalidHour: |
-    ❌ Qayta urinib ko'ring...
+    ❌ Qaytadan urinib ko'ring...
   reservationInfo: |
-    Maydonni bron qilish uchun umumiy narxning <b>50%</b> avansi to'langanligi kerak
+    Futbol maydonini band qilish uchun umumiy narxning <b>50%</b> avansi to'langan mablag'ni <b>10 daqiqa</b> ichida amalga oshiring
   pending: |
-    Menejer tasdiqlashini kutamiz... (maks. 30 daqiqa) 🕐
-  overall: "💰 Umumiy miqdori:"
-  toPay: "💰 Avans summasi:"
-  cardNumber: "💳 Karta raqami:"
-  cardHolder: "👤 Karta egasi:"
+    Menejer tasdiqlashini kuting... (maks. 30 daqiqa) 🕐
+  overall: "💰 Umumiy summa:"
+  toPay: "💰 Avans summa:"
+  cardNumber: "💳 Kartaning raqami:"
+  cardHolder: "👤 Kartaning egasi:"
   comment: "📝 Izoh:"
   currency: so'm
-  paid: To'lov amalga oshirildi ✅
+  paid: To'langan ✅
   cancel: Bekor qilish ❌
   invalidInterval: |
-    ❌ Qayta urinib ko'ring...
-    Vaqt miqdorini o'zgartiring yoki boshlash vaqtni o'zgartiring
-  enterPlayHours: "O'ynash vaqtini kiriting (soatda):"
-  dayisfree: Butun kun bo'sh, o'ynash uchun qo'llab-quvvatlash gaplashmang!
+    ❌ Qaytadan urinib ko'ring...
+    Soatlar sonini o'zgartiring yoki boshlash vaqtni o'zgartiring
+  enterPlayHours: "O'yin soatlari miqdorini kiriting:"
+  dayisfree: Kunning barcha soati bo'sh, o'yin uchun istalgan vaqtni tanlashingiz mumkin!
   dayisbooked: |
-    ❌ Uzr, kun barchasi bron qilingan...
-    Boshqa kunni tanlang:
+    ❌ Uzr, kun barchasi band...
+  Boshqa kunni tanlang:
   reservedHours: |
-    Bron qilingan vaqt (bo'sh oraliqlarni tanlang):
+    Band qilingan soatlar (bo'sh oralig'ini tanlang):
   reg: |
-    To'liq ishtirok qilish uchun ro'yxatdan o'ting.
+    So'rovda ishtirok qilish uchun ro'yxatdan o'ting.
   fullname: |
     To'liq ismingizni kiriting:
   phone: |
-    Raqamingizni kiriting:
+    Telefon raqamingizni kiriting:
   invalidphone: |
-    <b>Noto'g'ri telefon raqami!</b> 
-    Qayta urinib ko'ring:
+    <b>Noto'g'ri telefon raqami!</b>
+  Qayta urinib ko'ring:
   selectDate: |
-    Siz qaysi sanani tanladiz:
+    Sana tanlang:
   selectTime: |
-    Vaqtni tanlang (CH:00):
+    Vaqtni tanlang (S:00):
   regcompleted: |
     Ro'yxatdan o'tish muvaffaqiyatli yakunlandi ✅
   error: |
-    Noma'lum xato yuz berdi... ❌
-    Qayta urinib ko'ring
+    Nimadir noto'g'ri ketdi... ❌
+    Qaytadan urinib ko'ring
+
   chooseLanguage: Tilni tanlang
   selectsurvey: So'rovni tanlang
-  surveysnotfound: Mavjud so'rovlar yo'q
+  surveysnotfound: Mavjud so'rovlarni topilmadi
   selectbranch: Filialni tanlang
   surveycompleted: |
-    So'rov muvaffaqiyatli tugallandi!
+    So'rovni muvaffaqiyatli yakunlaganingiz uchun rahmat!
