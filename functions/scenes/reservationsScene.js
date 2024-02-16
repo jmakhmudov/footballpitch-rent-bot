@@ -38,7 +38,9 @@ dateStep.action(/calendar-telegram-date-[\d-]+/g, async (ctx) => {
     });
 
     if (!reservations.length) {
-      return ctx.reply(ctx.i18n.t("messages.noRes"));
+      ctx.scene.leave();
+      ctx.reply(ctx.i18n.t("messages.noRes"));
+      return start(ctx)
     }
 
     const reservationsInfo = await Promise.all(reservations.map(async (res) => {
@@ -57,6 +59,7 @@ ${ctx.i18n.t("messages.comment")} <code>${user.phone_number} ${user.full_name} $
 
     await ctx.replyWithHTML(reservationsInfo.join("\n-------------------\n"));
     ctx.scene.leave();
+    start(ctx)
   } catch (error) {
     console.error('Error answering callback query:', error);
   }
@@ -115,6 +118,7 @@ ${ctx.i18n.t("messages.comment")} <code>${user.phone_number} ${user.full_name} $
         })
         : ctx.reply(ctx.i18n.t("messages.noRes"));
       ctx.scene.leave();
+      start(ctx)
     }
     else {
       ctx.reply(ctx.i18n.t("messages.selectDate"), calendarRes.getCalendar());

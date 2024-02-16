@@ -209,7 +209,7 @@ bot.on('callback_query', async (ctx, next) => {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId }
     });
-
+    
     if (action === "confirm") {
       ctx.deleteMessage()
 
@@ -252,7 +252,7 @@ bot.on('callback_query', async (ctx, next) => {
     return next()
   }
 })
-
+bot.launch()
 exports.telegramBot = functions.https.onRequest(async (request, response) => {
   return await bot.handleUpdate(request.body, response).then((rv) => {
     return !rv && response.sendStatus(200);
