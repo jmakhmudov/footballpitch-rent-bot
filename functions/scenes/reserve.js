@@ -77,7 +77,7 @@ ${ctx.i18n.t("messages.selectFreeTime")}
 ${ctx.i18n.t("messages.selectHour")}`, generateKeyboard(selHour))
     }
     else {
-      ctx.replyWithHTML(`${ctx.i18n.t("messages.dayisbooked")}`, calendar.getCalendar());
+      ctx.replyWithHTML(`${ctx.i18n.t("messages.dayisbooked")}`, new Date(calendar.getCalendar()).toLocaleString('ru', { month: 'numeric', day: 'numeric', year: 'numeric'}));
     }
   } catch (error) {
     console.error('Error answering callback query:', error);
@@ -105,7 +105,7 @@ const reserveScene = new WizardScene(
       .oneTime(false)
       .resize()
       .extra())
-    await ctx.replyWithHTML(ctx.i18n.t("messages.selectDate"), calendar.getCalendar());
+    await ctx.replyWithHTML(ctx.i18n.t("messages.selectDate"), new Date(calendar.getCalendar()).toLocaleString('ru', { month: 'numeric', day: 'numeric', year: 'numeric'}));
     return ctx.wizard.next();
   },
   dateStep,
