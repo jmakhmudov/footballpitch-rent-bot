@@ -209,29 +209,41 @@ bot.on('callback_query', async (ctx, next) => {
     const reservation = await prisma.reservation.findUnique({
       where: { id: reservationId }
     });
-    
+
     if (action === "confirm") {
-      ctx.deleteMessage()
+      try {
+        ctx.deleteMessage()
 
-      if (reservation && reservation.isApproved) {
+        if (reservation && reservation.isApproved) {
+          return ctx.reply("✅")
+        }
+        await prisma.reservation.update({
+          where: { id: reservationId },
+          data: { isApproved: true }
+        })
+        await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationApproved")}`)
+      }
+      catch (e) {
+        console.log(e)
         return ctx.reply("✅")
       }
-      await prisma.reservation.update({
-        where: { id: reservationId },
-        data: { isApproved: true }
-      })
-      await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationApproved")}`)
     } else {
-      ctx.deleteMessage()
+      try {
+        ctx.deleteMessage()
 
-      if (reservation && reservation.isApproved) {
+        if (reservation && reservation.isApproved) {
+          return ctx.reply("✅")
+        }
+
+        await prisma.reservation.delete({
+          where: { id: reservationId }
+        })
+        await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationCancelled")}`)
+      }
+      catch (e) {
+        console.log(e)
         return ctx.reply("✅")
       }
-
-      await prisma.reservation.delete({
-        where: { id: reservationId }
-      })
-      await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationCancelled")}`)
     }
   }
   else if (type === "adminsList") {
