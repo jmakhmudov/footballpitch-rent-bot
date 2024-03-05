@@ -69,7 +69,7 @@ dateStep.action(/calendar-telegram-date-[\d-]+/g, async (ctx) => {
       availableHoursGlob = availableHours
       globDate = date
 
-      ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} ${date}
+      ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} ${new Date(date).toLocaleString('ru', { month: 'numeric', day: 'numeric', year: 'numeric'})}
 
 ${ctx.i18n.t("messages.selectFreeTime")}
 <b>${availableHours}</b>
@@ -140,7 +140,7 @@ const reserveScene = new WizardScene(
       buttons.push([Markup.callbackButton(ctx.i18n.t("messages.paid"), "reservation:paid")]);
       buttons.push([Markup.callbackButton(ctx.i18n.t("messages.cancel"), "reservation:cancel")]);
 
-      ctx.wizard.state.reservationMsg = ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
+      ctx.wizard.state.reservationMsg = ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${new Date(state.start_date).toLocaleString('ru', { month: 'numeric', day: 'numeric', year: 'numeric'})}</b>
 ${ctx.i18n.t("messages.starT")} <b>${reservationData.start_datetime.toLocaleString('ru', options)}</b>
 ${ctx.i18n.t("messages.finish")} <b>${reservationData.end_datetime.toLocaleString('ru', options)}</b>
 
@@ -248,7 +248,7 @@ ${ctx.i18n.t("messages.selectHour")}`, {
     const status = await isSlotBooked(`${state.start_date}T${hour}:01`)
     if (regex.test(hour) && !status) {
       state.start_hour = `${hour}:00`
-      ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${state.start_date}</b>
+      ctx.replyWithHTML(`${ctx.i18n.t("messages.selectedDate")} <b>${new Date(state.start_date).toLocaleString('ru', { month: 'numeric', day: 'numeric', year: 'numeric'})}</b>
 ${ctx.i18n.t("messages.starT")} <b>${state.start_hour}</b>
 
 ${ctx.i18n.t("messages.enterPlayHours")}`)
