@@ -32,22 +32,28 @@ const anouncement = new WizardScene(
       await ctx.reply(ctx.i18n.t("messages.succAnouncement"));
       for (const user of users) {
         const userId = user.id;
-        if (mediaAttachment) {
-          if (message.trim() !== '') {
-            if (mediaAttachment.type === 'photo') {
-              await bot.telegram.sendPhoto(userId, mediaAttachment.fileId, { caption: message });
-            } else if (mediaAttachment.type === 'video') {
-              await bot.telegram.sendVideo(userId, mediaAttachment.fileId, { caption: message });
-            }
-          } else {
-            if (mediaAttachment.type === 'photo') {
-              await bot.telegram.sendPhoto(userId, mediaAttachment.fileId);
-            } else if (mediaAttachment.type === 'video') {
-              await bot.telegram.sendVideo(userId, mediaAttachment.fileId);
+        try {
+          if (mediaAttachment) {
+            if (message.trim() !== '') {
+              if (mediaAttachment.type === 'photo') {
+                await bot.telegram.sendPhoto(userId, mediaAttachment.fileId, { caption: message });
+              } else if (mediaAttachment.type === 'video') {
+                await bot.telegram.sendVideo(userId, mediaAttachment.fileId, { caption: message });
+              }
+            } else {
+              if (mediaAttachment.type === 'photo') {
+                await bot.telegram.sendPhoto(userId, mediaAttachment.fileId);
+              } else if (mediaAttachment.type === 'video') {
+                await bot.telegram.sendVideo(userId, mediaAttachment.fileId);
+              }
             }
           }
-        } else {
-          await bot.telegram.sendMessage(userId, message);
+          else {
+            await bot.telegram.sendMessage(userId, message);
+          }
+        }
+        catch (e) {
+          console.log(e)
         }
       }
     } catch (error) {

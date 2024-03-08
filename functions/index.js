@@ -176,92 +176,95 @@ bot.hears([TelegrafI18n.match('buttons.changelang')], async (ctx) => {
 })
 
 bot.on('callback_query', async (ctx, next) => {
-  let [type, action, clientId, reservationId] = ctx.callbackQuery.data.split(":");
+  try {
+    let [type, action, clientId, reservationId] = ctx.callbackQuery.data.split(":");
 
-  if (type == "setlanguage") {
-    let [type, language] = ctx.callbackQuery.data.split(":");
-    switch (language) {
-      case "ru":
-        ctx.session.language = "ru"
-        ctx.session.__language_code = "ru"
-        break;
-      case "uz":
-        ctx.session.language = "uz"
-        ctx.session.__language_code = "uz"
-        break;
-      case "reset":
-        ctx.reply(ctx.i18n.t('messages.changelang'), Markup.removeKeyboard(true).extra()).then(e => ctx.deleteMessage(e.message_id))
-        ctx.session.language = "reset"
-        break;
+    if (type == "setlanguage") {
+      let [type, language] = ctx.callbackQuery.data.split(":");
+      switch (language) {
+        case "ru":
+          ctx.session.language = "ru"
+          ctx.session.__language_code = "ru"
+          break;
+        case "uz":
+          ctx.session.language = "uz"
+          ctx.session.__language_code = "uz"
+          break;
+        case "reset":
+          ctx.reply(ctx.i18n.t('messages.changelang'), Markup.removeKeyboard(true).extra()).then(e => ctx.deleteMessage(e.message_id))
+          ctx.session.language = "reset"
+          break;
+      }
+
+      ctx.i18n.locale(ctx.session.language)
+      ctx.answerCbQuery();
+      ctx.deleteMessage();
+
+      const user = await prisma.user.findUnique({
+        where: { id: JSON.stringify(ctx.from.id) }
+      });
+      if (!user) ctx.scene.enter('register')
+      else start(ctx)
     }
+    else if (type === 'admin') {
+      const reservation = await prisma.reservation.findUnique({
+        where: { id: reservationId }
+      });
 
-    ctx.i18n.locale(ctx.session.language)
-    ctx.answerCbQuery();
-    ctx.deleteMessage();
-
-    const user = await prisma.user.findUnique({
-      where: { id: JSON.stringify(ctx.from.id) }
-    });
-    if (!user) ctx.scene.enter('register')
-    else start(ctx)
-  }
-  else if (type === 'admin') {
-    const reservation = await prisma.reservation.findUnique({
-      where: { id: reservationId }
-    });
-
-    if (action === "confirm") {
-      try {
-        ctx.deleteMessage()
-
-        if (reservation && reservation.isApproved) {
+      if (action === "confirm") {
+        try {
+          if (reservation && reservation.isApproved) {
+            return ctx.reply("✅")
+          }
+          await prisma.reservation.update({
+            where: { id: reservationId },
+            data: { isApproved: true }
+          })
+          await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationApproved")}`)
+          ctx.deleteMessage()
+        }
+        catch (e) {
+          console.log(e)
           return ctx.reply("✅")
         }
-        await prisma.reservation.update({
-          where: { id: reservationId },
-          data: { isApproved: true }
-        })
-        await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationApproved")}`)
-      }
-      catch (e) {
-        console.log(e)
-        return ctx.reply("✅")
-      }
-    } else {
-      try {
-        ctx.deleteMessage()
+      } else {
+        try {
+          if (reservation && reservation.isApproved) {
+            return ctx.reply("✅")
+          }
 
-        if (reservation && reservation.isApproved) {
+          await prisma.reservation.delete({
+            where: { id: reservationId }
+          })
+          await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationCancelled")}`)
+          ctx.deleteMessage()
+        }
+        catch (e) {
+          console.log(e)
           return ctx.reply("✅")
         }
-
-        await prisma.reservation.delete({
-          where: { id: reservationId }
-        })
-        await bot.telegram.sendMessage(Number(clientId), `${ctx.i18n.t("messages.reservationCancelled")}`)
-      }
-      catch (e) {
-        console.log(e)
-        return ctx.reply("✅")
       }
     }
+    else if (type === "adminsList") {
+      await prisma.user.update({
+        where: { id: clientId },
+        data: { isAdmin: false }
+      });
+      ctx.reply(ctx.i18n.t("messages.adminDel"));
+    }
+    else if (type === "newAdmin") {
+      await prisma.user.update({
+        where: { id: action },
+        data: { isAdmin: true }
+      });
+      ctx.reply(ctx.i18n.t("messages.succNewAdmin"));
+    }
+    else {
+      return next()
+    }
   }
-  else if (type === "adminsList") {
-    await prisma.user.update({
-      where: { id: clientId },
-      data: { isAdmin: false }
-    });
-    ctx.reply(ctx.i18n.t("messages.adminDel"));
-  }
-  else if (type === "newAdmin") {
-    await prisma.user.update({
-      where: { id: action },
-      data: { isAdmin: true }
-    });
-    ctx.reply(ctx.i18n.t("messages.succNewAdmin"));
-  }
-  else {
-    return next()
+  catch (e) {
+    console.log(e)
   }
 })
 bot.launch()
