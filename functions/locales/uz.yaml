@@ -67,7 +67,7 @@ messages:
   starT: "Boshlanishi:"
   finish: "Tugashi:"
   invalidHour: |
-    ❌ Qaytadan urinib ko'ring...
+    ❌ Bu soat allaqachon band qilingan...
   reservationInfo: |
     Futbol maydonini band qilish uchun umumiy narxning <b>50%</b> avansi to'langan mablag'ni <b>10 daqiqa</b> ichida amalga oshiring
   pending: |
