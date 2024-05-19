@@ -32,52 +32,64 @@ bot.command('start', async (ctx) => {
 });
 
 bot.command('admin', async (ctx) => {
-  const user = await getUser(ctx.from.id);
+  try {
+    const user = await getUser(ctx.from.id);
 
-  if (user.isAdmin || user.isDev) {
-    await prisma.user.update({
-      where: {
-        id: JSON.stringify(ctx.from.id),
-      }, data: {
-        isLogged: true
-      }
-    })
-    start(ctx);
+    if (user.isAdmin || user.isDev) {
+      await prisma.user.update({
+        where: {
+          id: JSON.stringify(ctx.from.id),
+        }, data: {
+          isLogged: true
+        }
+      })
+      start(ctx);
+    }
+  } catch (err) {
+    console.log(err)
   }
 })
 
 bot.command('client', async (ctx) => {
-  const user = await getUser(ctx.from.id);
-
-  if (user.isAdmin || user.isDev) {
-    await prisma.user.update({
-      where: {
-        id: JSON.stringify(ctx.from.id),
-      }, data: {
-        isLogged: false
-      }
-    })
-    await ctx.reply(ctx.i18n.t("messages.adminLogout"));
-    start(ctx);
+  try {
+    const user = await getUser(ctx.from.id);
+  
+    if (user.isAdmin || user.isDev) {
+      await prisma.user.update({
+        where: {
+          id: JSON.stringify(ctx.from.id),
+        }, data: {
+          isLogged: false
+        }
+      })
+      await ctx.reply(ctx.i18n.t("messages.adminLogout"));
+      start(ctx);
+    }
+  } catch (err) {
+    console.log(err)
   }
 })
 
 bot.command('reqadmin', async (ctx) => {
-  const admins = await getAdmins();
-  const user = await getUser(ctx.from.id);
-
-  if (!user.isAdmin) {
-    admins.forEach((admin) => {
-      bot.telegram.sendMessage(admin.id, `${ctx.i18n.t("messages.newAdmin")}\n\n👤 ${user.full_name}`,
-        Markup
-          .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.confirm"), `newAdmin:${user.id}`)])
-          .resize()
-          .extra()
-      )
-    })
-  }
-  else {
-    ctx.reply(ctx.i18n.t("messages.alreadyAdmin"))
+  try {
+    const admins = await getAdmins();
+    const user = await getUser(ctx.from.id);
+  
+    if (!user.isAdmin) {
+      admins.forEach((admin) => {
+        bot.telegram.sendMessage(admin.id, `${ctx.i18n.t("messages.newAdmin")}\n\n👤 ${user.full_name}`,
+          Markup
+            .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.confirm"), `newAdmin:${user.id}`)])
+            .resize()
+            .extra()
+        )
+      })
+    }
+    else {
+      ctx.reply(ctx.i18n.t("messages.alreadyAdmin"))
+    }
+  } catch (err) {
+    console.log(err)
   }
 })
 
@@ -86,93 +98,129 @@ bot.hears([TelegrafI18n.match('buttons.reserve')], async (ctx) => {
 })
 
 bot.hears([TelegrafI18n.match('buttons.myReservations')], async (ctx) => {
-  const reservations = await prisma.reservation.findMany({
-    where: { user_id: JSON.stringify(ctx.from.id) }
-  })
-
-  if (!reservations.length) {
-    return ctx.reply(ctx.i18n.t("messages.noRes"));
+  try {
+    const reservations = await prisma.reservation.findMany({
+      where: { user_id: JSON.stringify(ctx.from.id) }
+    })
+  
+    if (!reservations.length) {
+      return ctx.reply(ctx.i18n.t("messages.noRes"));
+    }
+  
+    let options = { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
+  
+    const reservationsInfo = await Promise.all(reservations.map(async (res) => {
+      return (`${res.isApproved ? `✅✅✅` : `🕐🕐🕐`}\n${ctx.i18n.t("messages.starT")} <b>${res.start_datetime.toLocaleString('ru', options)}</b>
+  ${ctx.i18n.t("messages.finish")} <b>${res.end_datetime.toLocaleString('ru', options)}</b>
+        
+  ${ctx.i18n.t("messages.overall")} <b>${res.price.toLocaleString('en-US', { useGrouping: true })} ${ctx.i18n.t("messages.currency")}</b>
+        
+  ${ctx.i18n.t("messages.toPay")} <code>${(res.price / 2).toLocaleString('en-US', { useGrouping: true })}</code> <b>${ctx.i18n.t("messages.currency")}</b>`)
+    }))
+    ctx.replyWithHTML(`<b>${ctx.i18n.t("buttons.myReservations")}</b>\n\n${reservationsInfo.join("\n-------------------\n")}`)
+  } catch (err) {
+    console.log(err)
   }
-
-  let options = { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' };
-
-  const reservationsInfo = await Promise.all(reservations.map(async (res) => {
-    return (`${res.isApproved ? `✅✅✅` : `🕐🕐🕐`}\n${ctx.i18n.t("messages.starT")} <b>${res.start_datetime.toLocaleString('ru', options)}</b>
-${ctx.i18n.t("messages.finish")} <b>${res.end_datetime.toLocaleString('ru', options)}</b>
-      
-${ctx.i18n.t("messages.overall")} <b>${res.price.toLocaleString('en-US', { useGrouping: true })} ${ctx.i18n.t("messages.currency")}</b>
-      
-${ctx.i18n.t("messages.toPay")} <code>${(res.price / 2).toLocaleString('en-US', { useGrouping: true })}</code> <b>${ctx.i18n.t("messages.currency")}</b>`)
-  }))
-  ctx.replyWithHTML(`<b>${ctx.i18n.t("buttons.myReservations")}</b>\n\n${reservationsInfo.join("\n-------------------\n")}`)
 })
 
 bot.hears([TelegrafI18n.match('buttons.reservations')], async (ctx) => {
-  const check = checkAdmin(ctx.from.id);
-  if (check) {
-    ctx.scene.enter('reservationsScene');
+  try {
+    const check = checkAdmin(ctx.from.id);
+    if (check) {
+      ctx.scene.enter('reservationsScene');
+    }
+  } catch (err) {
+    console.log(err)
   }
 })
 
 bot.hears([TelegrafI18n.match('buttons.anouncement')], async (ctx) => {
-  const check = checkAdmin(ctx.from.id);
-  if (check) {
-    ctx.scene.enter('anouncement');
+  try {
+    const check = checkAdmin(ctx.from.id);
+    if (check) {
+      ctx.scene.enter('anouncement');
+    }
+  } catch (err) {
+    console.log(err)
   }
 })
 
 bot.hears([TelegrafI18n.match('buttons.back')], async (ctx) => {
-  ctx.scene.leave()
-  start(ctx)
+  try {
+    ctx.scene.leave()
+    start(ctx)
+  } catch (err) {
+    console.log(err)
+  }
 })
 
 bot.hears([TelegrafI18n.match('buttons.settings')], async (ctx) => {
-  const check = checkAdmin(ctx.from.id);
-  if (check) {
-    ctx.reply(ctx.i18n.t("buttons.settings"), Markup
-      .keyboard([
-        [Markup.button(ctx.i18n.t('buttons.changeCard'))],
-        [Markup.button(ctx.i18n.t('buttons.changePrice'))],
-        [Markup.button(ctx.i18n.t('buttons.addManager'))],
-        [Markup.button(ctx.i18n.t('buttons.back'))],
-      ])
-      .oneTime(false)
-      .resize()
-      .extra()
-    )
-  }
-})
-
-bot.hears([TelegrafI18n.match('buttons.changeCard')], async (ctx) => {
-  const check = checkAdmin(ctx.from.id);
-  if (check) {
-    ctx.scene.enter('changeCard');
-  }
-})
-
-bot.hears([TelegrafI18n.match('buttons.changePrice')], async (ctx) => {
-  const check = checkAdmin(ctx.from.id);
-  if (check) {
-    ctx.scene.enter('changePrice');
-  }
-})
-
-bot.hears([TelegrafI18n.match('buttons.addManager')], async (ctx) => {
-  const admins = await getAdmins();
-  ctx.reply(ctx.i18n.t("messages.adminsList"))
-  admins.map(admin => {
-    if (!admin.isDev) {
-      ctx.replyWithHTML(`ID: <b>${admin.id}</b>\n\nИмя: ${admin.full_name}\nНомер телефона: ${admin.phone_number}`, Markup
-        .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.delete"), `adminsList:del:${admin.id}`)])
+  try {
+    const check = checkAdmin(ctx.from.id);
+    if (check) {
+      ctx.reply(ctx.i18n.t("buttons.settings"), Markup
+        .keyboard([
+          [Markup.button(ctx.i18n.t('buttons.changeCard'))],
+          [Markup.button(ctx.i18n.t('buttons.changePrice'))],
+          [Markup.button(ctx.i18n.t('buttons.addManager'))],
+          [Markup.button(ctx.i18n.t('buttons.back'))],
+        ])
+        .oneTime(false)
         .resize()
         .extra()
       )
     }
-  })
+  } catch (err) {
+    console.log(err)
+  }
+})
+
+bot.hears([TelegrafI18n.match('buttons.changeCard')], async (ctx) => {
+  try {
+    const check = checkAdmin(ctx.from.id);
+    if (check) {
+      ctx.scene.enter('changeCard');
+    }
+  } catch (err) {
+    console.log(err)
+  }
+})
+
+bot.hears([TelegrafI18n.match('buttons.changePrice')], async (ctx) => {
+  try {
+    const check = checkAdmin(ctx.from.id);
+    if (check) {
+      ctx.scene.enter('changePrice');
+    }
+  } catch (err) {
+    console.log(err)
+  }
+})
+
+bot.hears([TelegrafI18n.match('buttons.addManager')], async (ctx) => {
+  try {
+    const admins = await getAdmins();
+    ctx.reply(ctx.i18n.t("messages.adminsList"))
+    admins.map(admin => {
+      if (!admin.isDev) {
+        ctx.replyWithHTML(`ID: <b>${admin.id}</b>\n\nИмя: ${admin.full_name}\nНомер телефона: ${admin.phone_number}`, Markup
+          .inlineKeyboard([Markup.callbackButton(ctx.i18n.t("buttons.delete"), `adminsList:del:${admin.id}`)])
+          .resize()
+          .extra()
+        )
+      }
+    })
+  } catch (err) {
+    console.log(err)
+  }
 })
 
 bot.hears([TelegrafI18n.match('buttons.changelang')], async (ctx) => {
-  sendLanguage(ctx);
+  try {
+    sendLanguage(ctx);
+  } catch (err) {
+    console.log(err)
+  }
 })
 
 bot.on('callback_query', async (ctx, next) => {
